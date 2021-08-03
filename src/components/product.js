@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
+import { useCart } from "../context/cartContext";
+
 const ProductContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -63,10 +65,40 @@ const StockMsg = styled.div`
   border-radius: 3px;
 `;
 export function Product({ item }) {
+  const { data: cartItems, setData: setCartItems } = useCart(null);
   const [quantity, setQuantity] = useState(1);
   const [avaibility, setAvaibility] = useState(true);
   const [alreadyAddedInCart, setAlreadyAddedInCart] = useState(false);
 
+  //check if item is out of stock
+  useEffect(() => {
+    if (item.available === 1) {
+      setAvaibility(true);
+    } else {
+      setAvaibility(false);
+    }
+  }, [item]);
+
+  //check of item exist in cart
+  useEffect(() => {
+    if (cartItems) {
+      const exist = cartItems.find((cartItem) => cartItem.id === item.id);
+      if (exist) {
+        setAlreadyAddedInCart(true);
+      } else {
+        setAlreadyAddedInCart(false);
+      }
+    }
+  }, [cartItems]);
+
+  //add to cart context
+  const addToCart = () => {
+    if (alreadyAddedInCart === false) {
+      let finalData = { ...item, quantity };
+      setCartItems([...cartItems, finalData]);
+      setAlreadyAddedInCart(true);
+    }
+  };
 
   return (
     <>
@@ -79,9 +111,21 @@ export function Product({ item }) {
           <input
             value={quantity}
             type="number"
-           
+            onChange={(e) => {
+              const number = Number(e.target.value);
+              if (number < 0 || number === 0) {
+                setQuantity(1);
+              } else if (number > 5) {
+                setQuantity(5);
+              } else {
+                setQuantity(number);
+              }
+            }}
           />{" "}
-          <button>
+          <button
+            onClick={addToCart}
+            disabled={!avaibility || alreadyAddedInCart}
+          >
             {alreadyAddedInCart ? "Added" : "Add"}
           </button>
         </QuickAddToCart>
